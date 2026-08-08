@@ -1,0 +1,381 @@
+-- [[ Load WindUI Library ]]
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+
+-- [[ Window Setup ]]
+local Window = WindUI:CreateWindow({
+    Title = "bigbiy Hub",
+    Icon = "gamepad-2",
+    Author = "by bigbiy",
+    OpenButton = {
+        Title = "Open bigbiy Hub",
+        Icon = "monitor",
+        CornerRadius = UDim.new(0, 16),
+        StrokeThickness = 2,
+        Color = ColorSequence.new(
+            Color3.fromHex("FF0F7B"),
+            Color3.fromHex("F89B29")
+        ),
+        OnlyMobile = false,
+        Enabled = true,
+        Draggable = true,
+    }
+})
+
+-- [[ Tabs ]]
+local LocalTab = Window:Tab({ Title = "ผู้เล่น (Player)", Icon = "user" })
+local EspTab = Window:Tab({ Title = "มองทะลุ (ESP)", Icon = "eye" })
+local CombatTab = Window:Tab({ Title = "ต่อสู้ (Combat)", Icon = "swords" })
+
+-- [[ Variables & Services ]]
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- Variables Settings
+local Settings = {
+    WalkSpeed = 16,
+    WalkSpeedEnabled = false,
+    JumpPower = 50,
+    JumpPowerEnabled = false,
+    ItemMagnet = false,
+    InfiniteStamina = false,
+    AutoRespawn = false,
+    AntiAntiRagdoll = false,
+    AntiSilentAim = false,
+    
+    -- ESP
+    ESP_Name = false,
+    ESP_Box = false,
+    ESP_Health = false,
+    ESP_Distance = false,
+    ESP_Inventory = false,
+    
+    -- Combat / Aim
+    Aimbot = false,
+    AimbotFOV = 150,
+    RainbowFOV = false,
+    Wallbang = false,
+    DoubleTap = false,
+    TeamCheck = true,
+}
+
+--------------------------------------------------------------------------------
+-- 1. Tab: Player Settings
+--------------------------------------------------------------------------------
+
+-- 1. ปรับแต่งการวิ่ง
+LocalTab:Toggle({
+    Title = "เปิดใช้งาน ปรับความเร็วการวิ่ง",
+    Value = false,
+    Callback = function(Value)
+        Settings.WalkSpeedEnabled = Value
+    end
+})
+
+LocalTab:Slider({
+    Title = "ความเร็วการวิ่ง",
+    Min = 16,
+    Max = 200,
+    Value = 16,
+    Callback = function(Value)
+        Settings.WalkSpeed = Value
+    end
+})
+
+-- 2. ปรับแต่งกระโดด
+LocalTab:Toggle({
+    Title = "เปิดใช้งาน ปรับแรงกระโดด",
+    Value = false,
+    Callback = function(Value)
+        Settings.JumpPowerEnabled = Value
+    end
+})
+
+LocalTab:Slider({
+    Title = "แรงกระโดด",
+    Min = 50,
+    Max = 300,
+    Value = 50,
+    Callback = function(Value)
+        Settings.JumpPower = Value
+    end
+})
+
+-- 3 & 13. ดูดของตก (Item Magnet)
+LocalTab:Toggle({
+    Title = "ดูดของตก (Item Magnet)",
+    Value = false,
+    Callback = function(Value)
+        Settings.ItemMagnet = Value
+    end
+})
+
+-- 4. สเตมิน่าไม่จำกัด
+LocalTab:Toggle({
+    Title = "สเตมิน่าไม่จำกัด (Infinite Stamina)",
+    Value = false,
+    Callback = function(Value)
+        Settings.InfiniteStamina = Value
+    end
+})
+
+-- 5. ออโต้เกิดใหม่หลังจากตาย
+LocalTab:Toggle({
+    Title = "เกิดใหม่อัตโนมัติ (Auto Respawn)",
+    Value = false,
+    Callback = function(Value)
+        Settings.AutoRespawn = Value
+    end
+})
+
+-- 6. กันล้มถ้าโดนชนหรือยิง
+LocalTab:Toggle({
+    Title = "กันล้ม / กัน Ragdoll (Anti Knockdown)",
+    Value = false,
+    Callback = function(Value)
+        Settings.AntiAntiRagdoll = Value
+    end
+})
+
+-- 7. การล็อคไว้ป้องกันโดน Silent Aim
+LocalTab:Toggle({
+    Title = "ป้องกัน Silent Aim (Anti-Silent Aim / Anti-Aim)",
+    Value = false,
+    Callback = function(Value)
+        Settings.AntiSilentAim = Value
+    end
+})
+
+--------------------------------------------------------------------------------
+-- 2. Tab: ESP Settings
+--------------------------------------------------------------------------------
+
+-- 8. ชื่อเปิดใช้งานเพื่อดูชื่อทั้งหมด
+EspTab:Toggle({
+    Title = "แสดงชื่อผู้เล่น (ESP Name)",
+    Value = false,
+    Callback = function(Value)
+        Settings.ESP_Name = Value
+    end
+})
+
+-- 9. กล่องเปิดใช้งานเพื่อดูกล่องผู้เล่นทั้งหมด
+EspTab:Toggle({
+    Title = "แสดงกล่อง (ESP Box)",
+    Value = false,
+    Callback = function(Value)
+        Settings.ESP_Box = Value
+    end
+})
+
+-- 10. เลือดเปิดใช้งานเพื่อดูเลือดผู้เล่นทั้งหมด
+EspTab:Toggle({
+    Title = "แสดงหลอดเลือด (ESP Health)",
+    Value = false,
+    Callback = function(Value)
+        Settings.ESP_Health = Value
+    end
+})
+
+-- 11. ระยะห่างเปิดใช้งานดูระยะห่างผู้เล่นทั้งหมด
+EspTab:Toggle({
+    Title = "แสดงระยะห่าง (ESP Distance)",
+    Value = false,
+    Callback = function(Value)
+        Settings.ESP_Distance = Value
+    end
+})
+
+-- 12. ของในตัวเปิดใช้งานเพื่อดูของในตัวผู้เล่นทั้งหมด
+EspTab:Toggle({
+    Title = "แสดงกระเป๋า/ของในตัว (ESP Inventory)",
+    Value = false,
+    Callback = function(Value)
+        Settings.ESP_Inventory = Value
+    end
+})
+
+--------------------------------------------------------------------------------
+-- 3. Tab: Combat Settings
+--------------------------------------------------------------------------------
+
+-- 14. ล็อคหัวตัวช่วยในการล็อกหัว ด้วย FOV มีเส้นตรงกลาง
+CombatTab:Toggle({
+    Title = "ระบบล็อคหัว (Aimbot Head)",
+    Value = false,
+    Callback = function(Value)
+        Settings.Aimbot = Value
+    end
+})
+
+-- 18. วงกลมสีสายรุ้ง FOV
+CombatTab:Toggle({
+    Title = "วงกลม FOV สีรุ้ง (Rainbow FOV)",
+    Value = false,
+    Callback = function(Value)
+        Settings.RainbowFOV = Value
+    end
+})
+
+-- 15. ยิงทะลุกำแพง
+CombatTab:Toggle({
+    Title = "ยิงทะลุกำแพง (Wallbang)",
+    Value = false,
+    Callback = function(Value)
+        Settings.Wallbang = Value
+    end
+})
+
+-- 16. ยิง x2 (Double Tap)
+CombatTab:Toggle({
+    Title = "ยิงเบิ้ล x2 (Double Tap)",
+    Value = false,
+    Callback = function(Value)
+        Settings.DoubleTap = Value
+    end
+})
+
+-- 17. ไม่ล็อคเพื่อน
+CombatTab:Toggle({
+    Title = "ไม่ล็อคพวกเดียวกัน (Team Check)",
+    Value = true,
+    Callback = function(Value)
+        Settings.TeamCheck = Value
+    end
+})
+
+--------------------------------------------------------------------------------
+-- Main Logic Loop & Functions
+--------------------------------------------------------------------------------
+
+-- FOV Circle setup
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Thickness = 1.5
+FOVCircle.NumSides = 100
+FOVCircle.Radius = Settings.AimbotFOV
+FOVCircle.Filled = false
+FOVCircle.Visible = false
+FOVCircle.Color = Color3.fromRGB(255, 255, 255)
+
+local CenterLine = Drawing.new("Line")
+CenterLine.Thickness = 1
+CenterLine.Color = Color3.fromRGB(255, 0, 0)
+CenterLine.Visible = false
+
+local hue = 0
+
+-- Main RenderLoop
+RunService.RenderStepped:Connect(function()
+    local Char = LocalPlayer.Character
+    if Char and Char:FindFirstChild("Humanoid") then
+        -- WalkSpeed & JumpPower
+        if Settings.WalkSpeedEnabled then
+            Char.Humanoid.WalkSpeed = Settings.WalkSpeed
+        end
+        if Settings.JumpPowerEnabled then
+            Char.Humanoid.UseJumpPower = true
+            Char.Humanoid.JumpPower = Settings.JumpPower
+        end
+        
+        -- Anti Ragdoll
+        if Settings.AntiAntiRagdoll then
+            Char.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+            Char.Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+        end
+        
+        -- Infinite Stamina
+        if Settings.InfiniteStamina then
+            if Char:FindFirstChild("Stamina") then
+                Char.Stamina.Value = 100
+            elseif LocalPlayer:FindFirstChild("Stamina") then
+                LocalPlayer.Stamina.Value = 100
+            end
+        end
+    end
+    
+    -- Item Magnet (ดูดของตกเข้าตัว)
+    if Settings.ItemMagnet and Char and Char:FindFirstChild("HumanoidRootPart") then
+        for _, v in pairs(workspace:GetChildren()) do
+            if v:IsA("Tool") or v:IsA("Model") and v:FindFirstChild("Handle") then
+                local part = v:FindFirstChild("Handle") or v.PrimaryPart
+                if part and (part.Position - Char.HumanoidRootPart.Position).Magnitude < 50 then
+                    part.CFrame = Char.HumanoidRootPart.CFrame
+                end
+            end
+        end
+    end
+
+    -- FOV Render & Rainbow FOV
+    local mousePos = UserInputService:GetMouseLocation()
+    FOVCircle.Position = mousePos
+    FOVCircle.Radius = Settings.AimbotFOV
+    FOVCircle.Visible = Settings.Aimbot
+    
+    if Settings.RainbowFOV then
+        hue = (hue + 0.005) % 1
+        FOVCircle.Color = Color3.fromHSV(hue, 1, 1)
+    else
+        FOVCircle.Color = Color3.fromRGB(255, 255, 255)
+    end
+    
+    -- Center line for Aim
+    if Settings.Aimbot then
+        CenterLine.Visible = true
+        CenterLine.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+        CenterLine.To = mousePos
+    else
+        CenterLine.Visible = false
+    end
+end)
+
+-- Auto Respawn
+LocalPlayer.CharacterAdded:Connect(function(Char)
+    local Hum = Char:WaitForChild("Humanoid")
+    Hum.Died:Connect(function()
+        if Settings.AutoRespawn then
+            task.wait(0.5)
+            LocalPlayer:LoadCharacter()
+        end
+    end)
+end)
+
+-- Anti-Silent Aim (Jitter/Desync Spoofer)
+RunService.Heartbeat:Connect(function()
+    if Settings.AntiSilentAim and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = LocalPlayer.Character.HumanoidRootPart
+        local oldVel = hrp.Velocity
+        hrp.Velocity = Vector3.new(math.random(-100, 100), math.random(-100, 100), math.random(-100, 100))
+        RunService.RenderStepped:Wait()
+        hrp.Velocity = oldVel
+    end
+end)
+
+-- Double Tap x2
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if not gpe and input.UserInputType == Enum.UserInputType.MouseButton1 and Settings.DoubleTap then
+        task.wait(0.05)
+        -- จำลองการยิงรอบที่สอง
+        mouse1click()
+    end
+end)
+
+-- Wallbang Setup
+local mt = getrawmetatable(game)
+local oldIndex = mt.__namecall
+setreadonly(mt, false)
+
+mt.__namecall = newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    if Settings.Wallbang and (method == "FindPartOnRayWithIgnoreList" or method == "Raycast") then
+        -- ข้ามคำสั่งตรวจสอบสิ่งกีดขวาง/กำแพง
+        local args = {...}
+        return oldIndex(self, unpack(args))
+    end
+    return oldIndex(self, ...)
+end)
+setreadonly(mt, true)
+
+-- Select default tab
+LocalTab:Select()
